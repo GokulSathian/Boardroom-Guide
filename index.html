@@ -1,0 +1,261 @@
+<!-- index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Boardroom Guide</title>
+  
+  <!-- React via CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+
+</head>
+<body>
+  <!-- Main container for the entire application -->
+  <div id="app-root"></div>
+
+  <footer class="footer">
+    <small>Boardroom — Minimal guide · Tap any button to start</small>
+  </footer>
+
+  <!-- All React logic is now in this single script -->
+  <script type="text/babel" src="script.js"></script>
+  
+  <script type="text/babel">
+    // script.js - Refactored with React
+    'use strict';
+
+    const { useState, useRef } = React;
+
+    // --- Data for both flows ---
+    const flowData = {
+      owl: {
+        title: "Set Up Owl Bar",
+        cards: [
+          {
+            id: 1,
+            title: "Step 1: Plug in the Owl Bar and power on",
+            content: "Connect to the nearest power outlet.",
+            gifUrl: "../v6 with react/Gif/Minions.gif"
+          },
+          {
+            id: 2,
+            title: "Step 2: Connect Owl Bar to the display",
+            content: "Use the HDMI cable to attach Owl Bar to your TV or monitor.",
+            gifUrl: "../v6 with react/Gif/Minions.gif"
+          },
+          {
+            id: 3,
+            title: "Step 3: Set up Wi-Fi",
+            content: "Go to Settings → Network and follow the on-screen instructions.",
+            gifUrl: "../v6 with react/Gif/Minions.gif"
+          }
+        ]
+      },
+      cast: {
+        title: "Cast My Screen",
+        cards: [
+          {
+            id: 1,
+            title: "Step 1: Turn on the TV — verify Wi-Fi is connected",
+            content: "(Samsung Smart TV — Settings → Network)",
+            gifUrl: "../v6 with react/Gif/Minions.gif"
+          },
+          {
+            id: 2,
+            title: "Step 2: Click Cast in the taskbar (or AirPlay)",
+            content: "On macOS: top-right menu → AirPlay icon",
+            gifUrl: "../v6 with react/Gif/Minions.gif"
+          },
+          {
+            id: 3,
+            title: "Step 3: Select the Boardroom display and Connect",
+            content: `If you can't find the display: Restart TV & device, ensure both on same Wi-Fi.`,
+            gifUrl: "../v6 with react/Gif/Minions.gif"
+          }
+        ]
+      }
+    };
+
+
+    // --- React Components ---
+
+    function StackedCards({ cards, onBack }) {
+      const [activeIndex, setActiveIndex] = useState(0);
+      
+      // --- Refs for Swipe Gesture ---
+      const touchStartX = useRef(null);
+      const touchEndX = useRef(null);
+      const minSwipeDistance = 50; // Minimum distance in pixels for a swipe to be registered
+
+      // --- Touch Handlers for Mobile Swipe ---
+
+      // Captures the starting X position of the touch
+      const onTouchStart = (e) => {
+        touchEndX.current = null; // Reset end position on new touch
+        touchStartX.current = e.targetTouches[0].clientX;
+      };
+
+      // Updates the end X position as the user's finger moves
+      const onTouchMove = (e) => {
+        touchEndX.current = e.targetTouches[0].clientX;
+      };
+
+      // Calculates the swipe direction and distance when the touch ends
+      const onTouchEnd = () => {
+        if (!touchStartX.current || !touchEndX.current) return;
+        const distance = touchStartX.current - touchEndX.current;
+        const isRightSwipe = distance < -minSwipeDistance; // Swipe right
+        const isLeftSwipe = distance > minSwipeDistance;  // Swipe left
+
+        // If swiped left, go to the next card
+        if (isLeftSwipe && activeIndex < cards.length - 1) {
+          setActiveIndex(activeIndex + 1);
+        // If swiped right, go to the previous card
+        } else if (isRightSwipe && activeIndex > 0) {
+          setActiveIndex(activeIndex - 1);
+        }
+
+        // Reset touch positions for the next swipe
+        touchStartX.current = null;
+        touchEndX.current = null;
+      };
+
+      const handleNext = () => {
+        if (activeIndex < cards.length - 1) setActiveIndex(activeIndex + 1);
+      };
+
+      const handlePrev = () => {
+        if (activeIndex > 0) setActiveIndex(activeIndex - 1);
+      };
+
+      return (
+        <div
+          className="stacked-cards-container"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          {cards.map((card, index) => {
+            const offset = index - activeIndex;
+            const isVisible = offset >= 0 && offset < 3;
+
+            return (
+              <div
+                key={card.id}
+                className={`card ${offset === 0 ? 'card--active' : ''}`}
+                style={{
+                  transform: `translateY(${offset * 30}px) scale(${1 - Math.abs(offset) * 0.05})`,
+                  opacity: isVisible ? 1 : 0,
+                  zIndex: 10 - offset,
+                  pointerEvents: offset === 0 ? 'auto' : 'none'
+                }}
+              >
+                <h2 className="card-title">{card.title}</h2>
+                {card.gifUrl && (
+                  <img
+                    src={card.gifUrl}
+                    alt="Step guidance"
+                    className="card-media"
+                  />
+                )}
+                <div className="card-content">{card.content}</div>
+              </div>
+            );
+          })}
+
+          <div className="nav-controls">
+            <div className="nav-buttons">
+              <button onClick={handlePrev} disabled={activeIndex === 0} className="nav-button nav-button--prev">
+                Prev
+              </button>
+              <div className="dots-container">
+              {cards.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveIndex(index)}
+                  className={`dot ${activeIndex === index ? "dot--active" : ""}`}
+                  aria-label={`Go to step ${index + 1}`}
+                />
+              ))}
+            </div>
+              <button onClick={handleNext} disabled={activeIndex === cards.length - 1} className="nav-button nav-button--next">
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function HomeScreen({ onSelectFlow }) {
+      return (
+        <main className="app app--centered">
+          <header className="brand" role="banner">
+            <svg className="brand__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2c2.21 0 4 1.79 4 4 0 2.17-1.61 3.94-3.72 3.99L12 10l-.28-.01C10.61 9.94 9 8.17 9 6c0-2.21 1.79-4 4-4zM6 8c-.55 0-1 .45-1 1v8c0 2.21 2.69 3 7 3s7-.79 7-3V9c0-.55-.45-1-1-1H6z"/>
+            </svg>
+            <div className="brand__meta">
+              <h1 className="brand__title">Boardroom Guide</h1>
+              <p className="brand__subtitle">Quick steps to set up the Owl Bar & cast your screen</p>
+            </div>
+          </header>
+          <section className="home-card" aria-labelledby="home-heading">
+            <h2 id="home-heading" className="visually-hidden">Choose a flow</h2>
+            <div className="home-actions">
+              <button onClick={() => onSelectFlow('owl')} className="action-button" aria-label="Set up Owl Bar">
+                <span className="action-button__emoji" aria-hidden="true">🔌</span>
+                <span className="action-button__label">Set Up Owl Bar</span>
+              </button>
+              <button onClick={() => onSelectFlow('cast')} className="action-button" aria-label="Cast my screen">
+                <span className="action-button__emoji" aria-hidden="true">📺</span>
+                <span className="action-button__label">Cast My Screen</span>
+              </button>
+            </div>
+            <p className="hint">Tap a flow to view step-by-step instructions.</p>
+          </section>
+        </main>
+      );
+    }
+
+    function FlowScreen({ flow, onBack }) {
+      return (
+        <main className="app">
+          <header className="flow-header">
+            <button className="back-button" onClick={onBack} aria-label="Back to home">‹ Back</button>
+            <h1>{flow.title}</h1>
+          </header>
+          <StackedCards cards={flow.cards} onBack={onBack} />
+        </main>
+      );
+    }
+
+
+    function App() {
+      const [activeFlow, setActiveFlow] = useState(null); // 'owl', 'cast', or null
+
+      const handleSelectFlow = (flowName) => {
+        setActiveFlow(flowName);
+      };
+
+      const handleGoHome = () => {
+        setActiveFlow(null);
+      };
+
+      if (activeFlow) {
+        return <FlowScreen flow={flowData[activeFlow]} onBack={handleGoHome} />;
+      }
+
+      return <HomeScreen onSelectFlow={handleSelectFlow} />;
+    }
+
+
+    const container = document.getElementById('app-root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+  </script>
+</body>
+</html>
