@@ -54,10 +54,15 @@
   /* --- Home Screen --- */
   .brand {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     align-items: center;
     margin-bottom: 18px;
   }
+.brand__logo {
+  max-height: 50px; /* Controls the logo size */
+  width: auto;      /* Maintains aspect ratio */
+  flex-shrink: 0;
+}
 
   .brand__icon {
     width: 48px;
